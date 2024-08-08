@@ -1,9 +1,5 @@
 version: 0.2
 
-env:
-  variables:
-    S3_BUCKET_NAME: "nomad-tictactoe-project"
-
 phases:
   pre_build:
     commands:
@@ -35,9 +31,9 @@ phases:
       - docker push $DOCKER_USERNAME/webapp:latest
       - echo Build completed on `date`
       - echo Listing all files in dist directory:
-      - ls dist  # Changed `dir` to `ls` for Unix-like systems
+      - ls dist
       - echo Uploading executable to S3...
-      - aws s3 cp dist/ui.exe s3://${S3_BUCKET_NAME}/tictactoe-executable.exe
+      - aws s3 cp dist/main.exe s3://builddb/main.exe
 
 artifacts:
   files:
