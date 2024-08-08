@@ -16,5 +16,6 @@ phases:
   post_build:
     commands:
       - echo Pushing the Docker image...
+      - docker tag webapp:latest $DOCKER_USERNAME/webapp:latest
       - docker push $DOCKER_USERNAME/webapp:latest
       - echo Build completed on `date`
