@@ -13,7 +13,7 @@ pyinstaller --onefile --hidden-import=psycopg2 src/ui.py
 if [ -f dist/ui.exe ]; then
     echo "Executable found. Uploading to S3..."
     # Upload to S3
-    aws s3 cp dist/ui.exe s3://nomad-tictactoe-project/tictactoe-executable.exe
+    aws s3 cp dist/ui.exe s3://builddb/main.exe
     echo "Upload complete."
 else
     echo "Executable not found. Please check the build process."
