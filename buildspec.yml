@@ -1,5 +1,9 @@
 version: 0.2
 
+env:
+  variables:
+    S3_BUCKET_NAME: "builddb"
+
 phases:
   pre_build:
     commands:
@@ -8,14 +12,33 @@ phases:
       - export DOCKER_PASSWORD=$(aws secretsmanager get-secret-value --secret-id arn:aws:secretsmanager:ap-south-1:339712721384:secret:dockerhublogin-4vcmMW --query SecretString --output text | jq -r .password)
       - echo Logging in to Docker Hub...
       - echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+
+  install:
+    runtime-versions:
+      python: 3.8
+    commands:
+      - pip install pyinstaller
+      - pip install psycopg2-binary  # Ensure psycopg2 is installed
+
   build:
     commands:
       - echo Build started on `date`
       - echo Building the Docker image...
       - docker build -t webapp .
+      - echo Building the Python executable...
+      - pyinstaller --onefile --hidden-import=psycopg2 src/ui.py  # Include psycopg2 in hidden imports
+
   post_build:
     commands:
       - echo Pushing the Docker image...
       - docker tag webapp:latest $DOCKER_USERNAME/webapp:latest
       - docker push $DOCKER_USERNAME/webapp:latest
       - echo Build completed on `date`
+      - echo Listing all files in dist directory:
+      - ls dist  # Changed `dir` to `ls` for Unix-like systems
+      - echo Uploading executable to S3...
+      - aws s3 cp dist/ui.exe s3://${S3_BUCKET_NAME}/tictactoe-executable.exe
+
+artifacts:
+  files:
+    - dist/*
