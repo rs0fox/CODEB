@@ -15,10 +15,16 @@ phases:
       - echo "Building the Docker image..."
       - docker build -t webapp .
       - mkdir -p game/dist
+      - echo "Listing contents of game/dist after build..."
+      - ls -la game/dist/
       - echo "Build completed on $(date)"
 
   post_build:
     commands:
+      - echo "Listing contents of the build directory..."
+      - ls -la
+      - echo "Listing contents of the game directory..."
+      - ls -la game/
       - echo "Listing contents of game/dist..."
       - ls -la game/dist/
       - echo "Checking if game file exists..."
