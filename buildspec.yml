@@ -17,6 +17,8 @@ phases:
 
   post_build:
     commands:
+      - echo "Uploading game executable to S3..."
+      - aws s3 cp game/dist/game s3://builddb/game
       - echo "Tagging the Docker image..."
       - docker tag webapp:latest "$DOCKER_USERNAME/webapp:latest"
       - echo "Pushing the Docker image..."
