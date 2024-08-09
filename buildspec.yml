@@ -13,9 +13,9 @@ phases:
     commands:
       - echo "Build started on $(date)"
       - echo "Building the Docker image for webapp..."
-      - docker build -t webapp ./webapp
+      - docker build -t webapp -f webapp/Dockerfile webapp
       - echo "Building the Docker image for game..."
-      - docker build -t game-image ./game
+      - docker build -t game-image -f game/Dockerfile game
       - mkdir -p game/dist
       - echo "Simulating build process for game..."
       # Simulate creation of the file for demonstration
