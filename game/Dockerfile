@@ -8,16 +8,13 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 # Copy the requirements.txt file into the container at /app
-COPY game/requirements.txt /app/
+COPY requirements.txt /app/
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code into the container
-COPY game/ /app/
+COPY . /app/
 
-# Make port 80 available to the world outside this container
-EXPOSE 80
-
-# Run main.py when the container launches
-CMD ["python", "app.py"]
+# Run the application
+CMD ["python", "main.py"]
