@@ -3,19 +3,23 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - echo Retrieving Docker Hub credentials from Secrets Manager...
+      - echo "Retrieving Docker Hub credentials from Secrets Manager..."
       - export DOCKER_USERNAME=$(aws secretsmanager get-secret-value --secret-id arn:aws:secretsmanager:ap-south-1:339712721384:secret:dockerhublogin-4vcmMW --query SecretString --output text | jq -r .username)
       - export DOCKER_PASSWORD=$(aws secretsmanager get-secret-value --secret-id arn:aws:secretsmanager:ap-south-1:339712721384:secret:dockerhublogin-4vcmMW --query SecretString --output text | jq -r .password)
-      - echo Logging in to Docker Hub...
+      - echo "Logging in to Docker Hub..."
       - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
   build:
     commands:
       - echo "Build started on $(date)"
-      - echo "Building the Docker image..."
-      - docker build -t webapp .
+      - echo "Building the Docker image for webapp..."
+      - docker build -t webapp ./webapp
+      - echo "Building the Docker image for game..."
+      - docker build -t game-image ./game
+      - echo "Listing built images..."
+      - docker images
       - mkdir -p game/dist
-      - echo "Simulating build process..."
+      - echo "Simulating build process for game..."
       # Simulate creation of the file for demonstration
       - echo "This is a game file." > game/dist/game
       - echo "Listing contents of game/dist after build..."
@@ -32,10 +36,14 @@ phases:
       - ls -la game/dist/
       - echo "Checking if game file exists..."
       - test -f game/dist/game && echo "File exists" || echo "File does not exist"
-      - echo "Uploading game executable to S3 with debug info..."
+      - echo "Uploading game file to S3 with debug info..."
       - aws s3 cp game/dist/game s3://builddb/game --debug
-      - echo "Tagging the Docker image..."
+      - echo "Tagging the webapp Docker image..."
       - docker tag webapp:latest "$DOCKER_USERNAME/webapp:latest"
-      - echo "Pushing the Docker image..."
+      - echo "Pushing the webapp Docker image..."
       - docker push "$DOCKER_USERNAME/webapp:latest"
+      - echo "Tagging the game Docker image..."
+      - docker tag game-image:latest "$DOCKER_USERNAME/game-image:latest"
+      - echo "Pushing the game Docker image..."
+      - docker push "$DOCKER_USERNAME/game-image:latest"
       - echo "Build completed on $(date)"

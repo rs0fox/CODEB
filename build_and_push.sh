@@ -1,23 +1,40 @@
 #!/bin/bash
 
-# Retrieve Docker Hub credentials from AWS Secrets Manager
-echo "Retrieving Docker Hub credentials from Secrets Manager..."
-DOCKER_USERNAME=$(aws secretsmanager get-secret-value --secret-id arn:aws:secretsmanager:ap-south-1:339712721384:secret:dockerhublogin-4vcmMW --query SecretString --output text | jq -r .username)
-DOCKER_PASSWORD=$(aws secretsmanager get-secret-value --secret-id arn:aws:secretsmanager:ap-south-1:339712721384:secret:dockerhublogin-4vcmMW --query SecretString --output text | jq -r .password)
+set -e  # Exit on any error
+set -x  # Enable debug mode for troubleshooting
 
-# Login to Docker Hub
-echo "Logging in to Docker Hub..."
-echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+# Variables
+DOCKERHUB_REPO_GAME="builddb-game"
+DOCKERHUB_REPO_WEBAPP="builddb-webapp"
+GAME_IMAGE_NAME="game-image"
+WEBAPP_IMAGE_NAME="webapp-image"
+TAG="latest"
+SECRETS_ID="arn:aws:secretsmanager:ap-south-1:339712721384:secret:dockerhublogin-4vcmMW"  # Correct ARN
+ARCHITECTURES="linux/amd64,linux/arm64"
 
-# Build the Docker image
-echo "Building the Docker image..."
-docker build -t webapp .
+# Retrieve DockerHub credentials from AWS Secrets Manager
+echo "Retrieving DockerHub credentials from AWS Secrets Manager..."
+DOCKERHUB_CREDENTIALS=$(aws secretsmanager get-secret-value --secret-id $SECRETS_ID --query SecretString --output text)
+DOCKERHUB_USERNAME=$(echo $DOCKERHUB_CREDENTIALS | jq -r .username)
+DOCKERHUB_PASSWORD=$(echo $DOCKERHUB_CREDENTIALS | jq -r .password)
 
-# Tag and push the Docker image
-echo "Tagging the Docker image..."
-docker tag webapp:latest "$DOCKER_USERNAME/webapp:latest"
+# Check if credentials are retrieved successfully
+if [ -z "$DOCKERHUB_USERNAME" ] || [ -z "$DOCKERHUB_PASSWORD" ]; then
+  echo "Failed to retrieve DockerHub credentials from AWS Secrets Manager."
+  exit 1
+fi
 
-echo "Pushing the Docker image..."
-docker push "$DOCKER_USERNAME/webapp:latest"
+# Authenticate Docker to DockerHub
+echo "Authenticating Docker to DockerHub..."
+echo $DOCKERHUB_PASSWORD | docker login --username $DOCKERHUB_USERNAME --password-stdin
 
-echo "Build and push completed."
+# Enable Docker Buildx (if not already enabled)
+echo "Enabling Docker Buildx..."
+docker buildx create --use || { echo "Failed to create Buildx builder"; exit 1; }
+
+# Build and push multi-architecture Docker images
+echo "Building and pushing multi-architecture Docker images..."
+docker buildx build --platform $ARCHITECTURES -t $DOCKERHUB_USERNAME/$DOCKERHUB_REPO_GAME:$TAG ./game --push --progress=plain || { echo "Failed to build and push game-image"; exit 1; }
+docker buildx build --platform $ARCHITECTURES -t $DOCKERHUB_USERNAME/$DOCKERHUB_REPO_WEBAPP:$TAG ./webapp --push --progress=plain || { echo "Failed to build and push webapp-image"; exit 1; }
+
+echo "Docker images have been pushed to DockerHub successfully."
