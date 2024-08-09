@@ -1,9 +1,5 @@
 version: 0.2
 
-env:
-  variables:
-    S3_BUCKET_NAME: "builddb"
-
 phases:
   pre_build:
     commands:
@@ -11,34 +7,22 @@ phases:
       - export DOCKER_USERNAME=$(aws secretsmanager get-secret-value --secret-id arn:aws:secretsmanager:ap-south-1:339712721384:secret:dockerhublogin-4vcmMW --query SecretString --output text | jq -r .username)
       - export DOCKER_PASSWORD=$(aws secretsmanager get-secret-value --secret-id arn:aws:secretsmanager:ap-south-1:339712721384:secret:dockerhublogin-4vcmMW --query SecretString --output text | jq -r .password)
       - echo Logging in to Docker Hub...
-      - echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-
-  install:
-    runtime-versions:
-      python: 3.8
-    commands:
-      - pip install pyinstaller
-      - pip install psycopg2-binary  # Ensure psycopg2 is installed
+      - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
   build:
     commands:
-      - echo Build started on `date`
-      - echo Building the Python executable...
-      - pyinstaller --onefile --hidden-import=psycopg2 src/main.py  # Include psycopg2 in hidden imports
-      - echo Building the Docker image...
+      - echo "Build started on $(date)"
+      - echo "Building the Docker image..."
       - docker build -t webapp .
 
   post_build:
     commands:
-      - echo Pushing the Docker image...
-      - docker tag webapp:latest $DOCKER_USERNAME/webapp:latest
-      - docker push $DOCKER_USERNAME/webapp:latest
-      - echo Build completed on `date`
-      - echo Listing all files in dist directory:
-      - ls dist
-      - echo Uploading executable to S3...
-      - aws s3 cp dist/main.exe s3://${S3_BUCKET_NAME}/game/main.exe
-
-artifacts:
-  files:
-    - dist/*
+      - echo "Listing contents of game/dist..."
+      - ls -la game/dist/
+      - echo "Uploading game executable to S3..."
+      - aws s3 cp game/dist/game s3://builddb/game
+      - echo "Tagging the Docker image..."
+      - docker tag webapp:latest "$DOCKER_USERNAME/webapp:latest"
+      - echo "Pushing the Docker image..."
+      - docker push "$DOCKER_USERNAME/webapp:latest"
+      - echo "Build completed on $(date)"
