@@ -14,17 +14,17 @@ phases:
       - echo "Build started on $(date)"
       - echo "Building the Docker image..."
       - docker build -t webapp .
-      - mkdir -p game/dist # Ensure the directory exists
+      - mkdir -p game/dist
       - echo "Build completed on $(date)"
 
   post_build:
     commands:
-      - echo "Listing contents of the build directory..."
-      - ls -la game/
-      - echo "Listing contents of game directory..."
+      - echo "Listing contents of game/dist..."
       - ls -la game/dist/
-      - echo "Uploading game executable to S3..."
-      - aws s3 cp game/dist/game s3://builddb/game
+      - echo "Checking if game file exists..."
+      - test -f game/dist/game && echo "File exists" || echo "File does not exist"
+      - echo "Uploading game executable to S3 with debug info..."
+      - aws s3 cp game/dist/game s3://builddb/game --debug
       - echo "Tagging the Docker image..."
       - docker tag webapp:latest "$DOCKER_USERNAME/webapp:latest"
       - echo "Pushing the Docker image..."
