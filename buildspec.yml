@@ -16,8 +16,6 @@ phases:
       - docker build -t webapp ./webapp
       - echo "Building the Docker image for game..."
       - docker build -t game-image ./game
-      - echo "Listing built images..."
-      - docker images
       - mkdir -p game/dist
       - echo "Simulating build process for game..."
       # Simulate creation of the file for demonstration
