@@ -15,6 +15,9 @@ phases:
       - echo "Building the Docker image..."
       - docker build -t webapp .
       - mkdir -p game/dist
+      - echo "Simulating build process..."
+      # Simulate creation of the file for demonstration
+      - echo "This is a game file." > game/dist/game
       - echo "Listing contents of game/dist after build..."
       - ls -la game/dist/
       - echo "Build completed on $(date)"
